@@ -4,12 +4,11 @@ require('dotenv').config();
 
 class DataswiftWalletClient {
   constructor() {
-    this.apiUrl = process.env.DATASWIFT_API_URL || 'https://postman.hubat.net';
-    this.walletId = process.env.DATASWIFT_WALLET_ID;
+    this.apiUrl = process.env.DATASWIFT_API_URL;
     this.jwtGenerator = new JWTTokenGenerator();
     
-    if (!this.walletId) {
-      console.warn('⚠️  DATASWIFT_WALLET_ID not provided - using default wallet endpoint');
+    if (!this.apiUrl) {
+      throw new Error('DATASWIFT_API_URL is required');
     }
   }
 

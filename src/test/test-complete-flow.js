@@ -29,11 +29,11 @@ async function testCompleteFlow() {
     console.log(`✅ Contact found: ${contact.Full_Name} (${contact.Email})`);
     
     console.log('\n' + '='.repeat(60));
-    console.log('🔄 STEP 2: Generating JWT token for Dataswift');
+    console.log('🔄 STEP 2: Generating Application token for Data Connector');
     console.log('='.repeat(60));
     
-    const jwtToken = await jwtGenerator.generateJWTToken();
-    console.log(`✅ JWT token generated: ${jwtToken.substring(0, 50)}...`);
+    const applicationToken = await jwtGenerator.generateApplicationToken();
+    console.log(`✅ Application token generated: ${applicationToken.substring(0, 50)}...`);
     
     console.log('\n' + '='.repeat(60));
     console.log('🔄 STEP 3: Transforming contact data');
@@ -55,7 +55,7 @@ async function testCompleteFlow() {
     console.log('🔄 STEP 4: Writing to Dataswift wallet');
     console.log('='.repeat(60));
     
-    const writeResult = await walletClient.writeZohoCRMData(formattedData, jwtToken);
+    const writeResult = await walletClient.writeZohoCRMData(formattedData, applicationToken);
     
     console.log('✅ Successfully wrote contact data to Dataswift wallet!');
     console.log('📊 Write result:');
@@ -72,7 +72,7 @@ async function testCompleteFlow() {
       const readResult = await walletClient.readFromNamespace(
         writeResult.namespace, 
         writeResult.path, 
-        jwtToken
+        applicationToken
       );
       
       console.log('✅ Successfully read back data from wallet!');
@@ -95,14 +95,14 @@ async function testCompleteFlow() {
     
     console.log('\n📋 Summary:');
     console.log(`✅ 1. Found contact: ${contact.Full_Name}`);
-    console.log(`✅ 2. Generated JWT token`);
+    console.log(`✅ 2. Generated Application token`);
     console.log(`✅ 3. Transformed data to Dataswift schema`);
     console.log(`✅ 4. Wrote to wallet namespace: ${writeResult.namespace}/${writeResult.path}`);
     console.log(`✅ 5. Process completed successfully`);
     
     console.log('\n💡 Next Steps:');
     console.log('   - This flow can now be integrated into webhook endpoints');
-    console.log('   - JWT token will be provided by Gateway in production');
+    console.log('   - Application token will be provided by Gateway in production');
     console.log('   - Contact email will come from CheckD callback');
     console.log('   - Data is now available in Dataswift wallet for badge authentication');
     

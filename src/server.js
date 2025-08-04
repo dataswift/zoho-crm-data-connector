@@ -46,6 +46,28 @@ function decodeApplicationToken(token) {
 }
 
 /**
+ * Extract PDA URL from JWT token's iss claim
+ * Auto-prepends https:// if missing
+ * @param {string} token - JWT token to extract PDA URL from
+ * @returns {string} PDA URL with https:// protocol
+ */
+function extractPdaUrl(token) {
+  try {
+    const decoded = decodeApplicationToken(token);
+    let pdaUrl = decoded.iss;
+    
+    // Auto-prepend https:// if missing
+    if (!pdaUrl.startsWith('http://') && !pdaUrl.startsWith('https://')) {
+      pdaUrl = 'https://' + pdaUrl;
+    }
+    
+    return pdaUrl;
+  } catch (error) {
+    throw new Error(`Failed to extract PDA URL: ${error.message}`);
+  }
+}
+
+/**
  * Check if token has expired
  * @param {string} token - JWT token to check
  * @returns {boolean} True if token is expired
@@ -117,14 +139,19 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
       throw new Error('INVALID_TOKEN: Token has expired');
     }
     
-    // Step 3: Validate application ID (optional - if DS_APPLICATION_ID is configured)
+    // Step 3: Validate application ID (required for security)
     const expectedAppId = process.env.DS_APPLICATION_ID;
-    if (expectedAppId && tokenPayload.application !== expectedAppId) {
+    if (!expectedAppId) {
+      throw new Error('INVALID_TOKEN: DS_APPLICATION_ID not configured in environment');
+    }
+    
+    if (tokenPayload.application !== expectedAppId) {
       console.error(`Application ID mismatch: expected ${expectedAppId}, got ${tokenPayload.application}`);
       throw new Error('INVALID_TOKEN: Application ID mismatch');
     }
     
-    const pdaUrl = tokenPayload.iss;
+    // Extract PDA URL from token's iss claim with auto-prepended https://
+    const pdaUrl = extractPdaUrl(token);
     const applicationId = tokenPayload.application;
     
     // Step 3: Parse data to extract merchant email
@@ -187,7 +214,7 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
     if (error.message === 'EMAIL_NOT_FOUND') {
       errorCode = 'EMAIL_NOT_FOUND';
       statusCode = 404;
-    } else if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('INVALID_TOKEN')) {
+    } else if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('INVALID_TOKEN') || error.message.includes('Application ID mismatch')) {
       errorCode = 'INVALID_TOKEN';
       statusCode = 401;
     } else if (error.message.includes('Email not found')) {
@@ -239,24 +266,32 @@ async function sendCallback(callbackUrl, data) {
 
 /**
  * PDA Wallet Client using JWT token for authentication
+ * Implements wallet service with PDA URL extraction according to authentication plan
  */
 class PDAWalletClient {
   constructor(pdaUrl, jwtToken) {
+    // Auto-prepend https:// to PDA URLs if missing
+    if (!pdaUrl.startsWith('http://') && !pdaUrl.startsWith('https://')) {
+      pdaUrl = 'https://' + pdaUrl;
+    }
     this.pdaUrl = pdaUrl;
     this.jwtToken = jwtToken;
   }
   
-  async writeToNamespace(namespace, endpoint, data) {
+  async writeToNamespace(namespace, dataPath, data) {
     try {
-      console.log(`🔄 Writing to PDA: ${this.pdaUrl}/api/v2.6/data/${namespace}/${endpoint}`);
+      // Construct wallet API endpoint: {pdaUrl}/api/v2/data/{namespace}/{dataPath}
+      const endpoint = `${this.pdaUrl}/api/v2/data/${namespace}/${dataPath}`;
+      console.log(`🔄 Writing to PDA: ${endpoint}`);
       
       const response = await axios.post(
-        `${this.pdaUrl}/api/v2.6/data/${namespace}/${endpoint}`,
+        endpoint,
         data,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.jwtToken}`
+            // Pass original JWT token as X-Auth-Token header for wallet authentication
+            'X-Auth-Token': this.jwtToken
           },
           timeout: 30000
         }
@@ -273,7 +308,7 @@ class PDAWalletClient {
       
     } catch (error) {
       console.error('❌ Failed to write to PDA:', error.response?.data || error.message);
-      throw new Error(`Failed to write to PDA namespace ${namespace}/${endpoint}: ${error.message}`);
+      throw new Error(`Failed to write to PDA namespace ${namespace}/${dataPath}: ${error.message}`);
     }
   }
 }

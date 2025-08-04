@@ -18,11 +18,19 @@ class ConnectEndpointTest {
     
     // Test configuration
     this.testConfig = {
-      pdaUrl: process.env.DATASWIFT_API_URL || 'https://postman.hubat.net',
-      applicationId: process.env.DS_APPLICATION_ID || 'zoho-crm-connector-test',
+      pdaUrl: process.env.DATASWIFT_API_URL,
+      applicationId: process.env.DS_APPLICATION_ID,
       testEmail: 'sarah.johnson@techcorp.com', // From test data
       secretKey: 'test-secret-key-for-jwt-signing' // For test JWT signing
     };
+    
+    if (!this.testConfig.pdaUrl) {
+      throw new Error('DATASWIFT_API_URL is required for testing');
+    }
+    
+    if (!this.testConfig.applicationId) {
+      throw new Error('DS_APPLICATION_ID is required for testing');
+    }
   }
 
   /**

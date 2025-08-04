@@ -5,7 +5,7 @@ A production-ready webhook-driven data connector service that receives requests 
 ## Features
 
 - 🚀 **Production API Endpoint** - `/connect` endpoint for Data Connector Gateway integration
-- 🔐 **JWT Token Authentication** - Validates and processes JWT tokens from the gateway
+- 🔐 **Application Token Authentication** - Validates and processes Application tokens from the gateway
 - 📧 **Email-Based Contact Search** - Searches Zoho CRM contacts by merchant email
 - 💾 **Smart Namespace Storage** - Test/production separation with automatic detection
 - 📄 **User-Friendly Error Pages** - Professional error pages for different failure scenarios
@@ -38,15 +38,18 @@ ZOHO_CRM_CLIENT_ID=your_client_id_here
 ZOHO_CRM_CLIENT_SECRET=your_client_secret_here
 ZOHO_CRM_REFRESH_TOKEN=your_refresh_token_here
 
-# Dataswyft Wallet Configuration
+# Data Connector Configuration (Required for production)
+DS_APPLICATION_ID=oi-s-zohocrmdataconnector
+DS_NAMESPACE=zoho_crm
+DS_DATA_PATH=contacts
+CONNECTOR_PORT=8080
+CALLBACK_URL=https://example.com/callback
+
+# Test-Only Configuration (Only needed for running test scripts)
 DATASWIFT_API_URL=https://your-wallet-instance.hubat.net
 DATASWIFT_USERNAME=your_username
 DATASWIFT_PASSWORD=your_password
-
-# Optional Configuration
-DS_APPLICATION_ID=zoho-crm-connector
-CONNECTOR_PORT=8080
-NODE_ENV=test
+NODE_ENV=development
 ```
 
 ### 3. Zoho CRM Authentication Setup
