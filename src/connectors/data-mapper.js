@@ -1,3 +1,5 @@
+const ChecksumGenerator = require('../utils/checksum-generator');
+
 class DataMapper {
   constructor() {
     this.connectorVersion = '1.0.0';
@@ -8,7 +10,7 @@ class DataMapper {
     const timestamp = new Date().toISOString();
     
     return {
-      namespace: "zoho_crm",
+      namespace: "zoho",
       endpoint: "/crm/v8/Contacts/search",
       data: {
         id: zohoContact.id,
@@ -166,9 +168,28 @@ class DataMapper {
     // Format the data for Dataswift storage
     return {
       contact_id: transformedData.data.id,
-      zoho_crm_data: transformedData.data,
+      zoho_data: transformedData.data,
       metadata: transformedData.metadata,
       timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Create wallet payload with checksum metadata
+   * @param {Object} transformedData - Data from external API after transformation
+   * @param {string} inboxMessageId - Unique identifier for the inbox message
+   * @returns {Object} - Complete payload ready for wallet storage
+   */
+  createWalletPayload(transformedData, inboxMessageId) {
+    const checksum = ChecksumGenerator.computeChecksum(transformedData);
+    
+    return {
+      metadata: {
+        inbox_message_id: inboxMessageId,
+        created_at: new Date().toISOString(),
+        checksum: checksum
+      },
+      data: transformedData
     };
   }
 }

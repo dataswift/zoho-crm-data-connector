@@ -85,7 +85,7 @@ class ZohoCRMConnector {
     });
     
     return {
-      namespace: "zoho_crm",
+      namespace: "zoho",
       endpoint: "/crm/v8/Contacts/search",
       data: {
         id: contact.id,

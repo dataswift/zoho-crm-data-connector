@@ -320,12 +320,12 @@ class ConnectEndpointTest {
       throw new Error('Expected data_extracted to be true');
     }
     
-    if (!callback.summary.zoho_crm_namespace_stored) {
-      throw new Error('Expected zoho_crm_namespace_stored to be true');
+    if (!callback.summary.zoho_namespace_stored) {
+      throw new Error('Expected zoho_namespace_stored to be true');
     }
     
-    if (!callback.record_ids.zoho_crm_record_id) {
-      throw new Error('Missing zoho_crm_record_id in callback');
+    if (!callback.record_ids.zoho_record_id) {
+      throw new Error('Missing zoho_record_id in callback');
     }
     
     console.log('✅ Success callback validation passed');

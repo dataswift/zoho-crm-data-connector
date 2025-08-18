@@ -182,7 +182,7 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
     
     let zohoRecord;
     if (isTestMode) {
-      zohoRecord = await dataswiftClient.writeToNamespace('test', 'zoho-crm', contactData);
+      zohoRecord = await dataswiftClient.writeToNamespace('zoho', 'test', contactData);
     } else {
       zohoRecord = await dataswiftClient.writeZohoCRMContact(contactData);
     }
@@ -193,11 +193,11 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
       request_id: request_id,
       summary: {
         data_extracted: true,
-        zoho_crm_namespace_stored: true,
+        zoho_namespace_stored: true,
         badge_authenticated: true
       },
       record_ids: {
-        zoho_crm_record_id: zohoRecord.recordId
+        zoho_record_id: zohoRecord.recordId
       },
       timestamp: new Date().toISOString()
     };

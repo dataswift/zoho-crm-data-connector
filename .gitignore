@@ -12,8 +12,8 @@ yarn-error.log*
 .env.production.local
 
 # Documentation (excluded from version control)
-CLAUDE.md
-requirements.md
+*.md
+!README.md
 
 # Logs
 logs/

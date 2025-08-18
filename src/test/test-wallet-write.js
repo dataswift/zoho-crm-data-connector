@@ -1,30 +1,47 @@
 const DataswiftWalletClient = require('../storage/dataswyft-wallet-client');
+const DataMapper = require('../connectors/data-mapper');
+const ChecksumGenerator = require('../utils/checksum-generator');
 
 async function testWalletWrite() {
   console.log('🔄 Testing Dataswyft wallet write operations...\n');
   
-  const walletClient = new DataswiftWalletClient();
+  // Initialize client in test mode to enable authentication flow
+  const walletClient = new DataswiftWalletClient(true);
   
   try {
-    // Test 1: Simple write to existing namespace
-    console.log('🔄 Test 1: Writing to test namespace...');
-    const testResult = await walletClient.writeToNamespace('test', 'contacts', {
-      test: 'zoho_crm_integration',
-      timestamp: new Date().toISOString(),
-      data: {
-        email: 'test@example.com',
-        name: 'Test User'
-      }
-    });
+    // Test 1: Test checksum generation
+    console.log('🔄 Test 1: Testing checksum generation...');
+    const testData = {
+      email: 'test@example.com',
+      name: 'Test User',
+      company: 'Test Company'
+    };
+    
+    const checksum = ChecksumGenerator.computeChecksum(testData);
+    console.log('✅ Checksum generated successfully!');
+    console.log(`📋 Checksum: ${checksum}`);
+    
+    // Test 2: Test DataMapper payload creation
+    console.log('\n🔄 Test 2: Testing DataMapper payload creation...');
+    const dataMapper = new DataMapper();
+    const inboxMessageId = 'test-msg-' + Date.now();
+    const payload = dataMapper.createWalletPayload(testData, inboxMessageId);
+    
+    console.log('✅ Payload created successfully!');
+    console.log('📋 Payload structure:', JSON.stringify(payload, null, 2));
+    
+    // Test 3: Simple write to namespace with new payload structure
+    console.log('\n🔄 Test 3: Writing payload to zoho/test namespace...');
+    const testResult = await walletClient.writeToNamespace('zoho', 'test', payload);
     
     console.log('✅ Test write successful!');
     console.log(`📋 Record ID: ${testResult.recordId}`);
     
-    // Test 2: Try to write to zoho_crm namespace
-    console.log('\n🔄 Test 2: Writing to zoho_crm namespace...');
+    // Test 4: Test writeZohoCRMContact with new payload structure
+    console.log('\n🔄 Test 4: Testing writeZohoCRMContact with checksum...');
     
     const sampleZohoData = {
-      namespace: "zoho_crm",
+      namespace: "zoho",
       endpoint: "/crm/v8/Contacts/search",
       data: {
         id: "test123",
@@ -65,9 +82,10 @@ async function testWalletWrite() {
       }
     };
     
-    const zohoCRMResult = await walletClient.writeToNamespace('zoho_crm', 'contacts', sampleZohoData);
+    const zohoInboxMessageId = 'zoho-test-msg-' + Date.now();
+    const zohoCRMResult = await walletClient.writeZohoCRMContact(sampleZohoData, zohoInboxMessageId);
     
-    console.log('✅ Zoho CRM write successful!');
+    console.log('✅ Zoho CRM write with checksum successful!');
     console.log(`📋 Record ID: ${zohoCRMResult.recordId}`);
     
     console.log('\n🎉 All wallet write tests passed!');
@@ -84,10 +102,10 @@ async function testWalletWrite() {
     console.log('\n🔄 Testing different namespace patterns...');
     
     const testPatterns = [
+      { namespace: 'zoho', endpoint: 'test' },
       { namespace: 'zoho', endpoint: 'contacts' },
-      { namespace: 'crm', endpoint: 'contacts' },
-      { namespace: 'zoho_crm', endpoint: 'data' },
-      { namespace: 'data', endpoint: 'zoho_crm' }
+      { namespace: 'test', endpoint: 'zoho' },
+      { namespace: 'data', endpoint: 'zoho' }
     ];
     
     for (const pattern of testPatterns) {

@@ -89,7 +89,7 @@ class JWTTokenGenerator {
 
       if (response.data) {
         // The response should be the application token
-        const applicationToken = response.data.token || response.data.access_token || response.data;
+        const applicationToken = response.data.accessToken || response.data.token || response.data.access_token || response.data;
         
         if (typeof applicationToken === 'string') {
           console.log('✅ Application token generated successfully!');

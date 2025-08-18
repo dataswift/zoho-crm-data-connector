@@ -7,10 +7,12 @@ A production-ready webhook-driven data connector service that receives requests 
 - 🚀 **Production API Endpoint** - `/connect` endpoint for Data Connector Gateway integration
 - 🔐 **Application Token Authentication** - Validates and processes Application tokens from the gateway
 - 📧 **Email-Based Contact Search** - Searches Zoho CRM contacts by merchant email
-- 💾 **Smart Namespace Storage** - Test/production separation with automatic detection
+- 💾 **Single Namespace Storage** - Stores data in `zoho/contacts` namespace
+- 🔒 **Data Integrity Verification** - MD5 checksum validation for all stored data
+- 📦 **Structured Payload Format** - Metadata wrapper with checksum and traceability
 - 📄 **User-Friendly Error Pages** - Professional error pages for different failure scenarios
 - 📞 **Callback Integration** - Returns status and record IDs via callback URLs
-- 🧪 **Comprehensive Testing** - Full end-to-end test suite with error page validation
+- 🧪 **Comprehensive Testing** - Full end-to-end test suite with checksum validation
 
 ## Quick Start
 
@@ -39,8 +41,8 @@ ZOHO_CRM_CLIENT_SECRET=your_client_secret_here
 ZOHO_CRM_REFRESH_TOKEN=your_refresh_token_here
 
 # Data Connector Configuration (Required for production)
-DS_APPLICATION_ID=oi-s-zohocrmdataconnector
-DS_NAMESPACE=zoho_crm
+DS_APPLICATION_ID=oi-s-zohodataconnector
+DS_NAMESPACE=zoho
 DS_DATA_PATH=contacts
 CONNECTOR_PORT=8080
 CALLBACK_URL=https://example.com/callback
@@ -146,11 +148,13 @@ The test suite validates the complete `/connect` endpoint workflow including suc
 
 ### Success Flow
 1. **Gateway Request** → `/connect` endpoint with JWT token
-2. **JWT Validation** → Extract PDA URL and validate expiration
+2. **JWT Validation** → Extract PDA URL and validate expiration  
 3. **Contact Search** → Find merchant in Zoho CRM by email
 4. **Data Transform** → Convert to Dataswyft wallet format
-5. **Storage** → Save to appropriate namespace (test/production)
-6. **Callback** → Send success status with record ID
+5. **Checksum Generation** → Compute MD5 hash for data integrity
+6. **Payload Creation** → Wrap data with metadata (inbox_message_id, timestamp, checksum)
+7. **Storage** → Save to `zoho/contacts` namespace
+8. **Callback** → Send success status with record ID
 
 ### Error Flow  
 1. **Error Detection** → Invalid token, missing email, API failure
@@ -171,31 +175,39 @@ The test suite validates the complete `/connect` endpoint workflow including suc
 
 ### Output (to Dataswyft Wallet)
 ```javascript
+// POST /api/v2.6/data/zoho/contacts
 {
-  "namespace": "zoho_crm", // or "test" for testing
-  "endpoint": "/crm/v8/Contacts/search",
+  "metadata": {
+    "inbox_message_id": "inbox-msg-6899019000000603062-1755544928715",
+    "created_at": "2025-08-18T19:23:01.604Z",
+    "checksum": "a8e007b487bb707b04e6afc9fa7d0df9"
+  },
   "data": {
-    "id": "6899019000000603062",
-    "created_at": "2025-07-16T12:34:51-04:00",
-    "source": {
-      "provider": "zoho_crm",
-      "version": "v8",
-      "module": "Contacts"
-    },
-    "content": {
-      "email": "merchant@example.com",
-      "firstname": "John",
-      "lastname": "Doe",
-      "company": "Example Corp",
-      "phone": "+1-555-0123",
-      "jobtitle": "CEO",
-      "country": "United States",
-      // ... additional fields
-    },
-    "metadata": {
-      "sync_timestamp": "2025-07-30T22:15:30.123Z",
-      "connector_version": "1.0.0",
-      "schema_version": "1.0"
+    "namespace": "zoho",
+    "endpoint": "/crm/v8/Contacts/search",
+    "data": {
+      "id": "6899019000000603062",
+      "created_at": "2025-07-16T12:34:51-04:00",
+      "source": {
+        "provider": "zoho_crm",
+        "version": "v8",
+        "module": "Contacts"
+      },
+      "content": {
+        "email": "merchant@example.com",
+        "firstname": "John",
+        "lastname": "Doe",
+        "company": "Example Corp",
+        "phone": "+1-555-0123",
+        "jobtitle": "CEO",
+        "country": "United States",
+        // ... additional fields
+      },
+      "metadata": {
+        "sync_timestamp": "2025-07-30T22:15:30.123Z",
+        "connector_version": "1.0.0",
+        "schema_version": "1.0"
+      }
     }
   }
 }
@@ -213,14 +225,61 @@ src/
 ├── connectors/
 │   ├── zoho-crm-connector.js     # CRM API client with field optimization
 │   ├── contact-search.js         # Email-based contact search
-│   └── data-mapper.js            # Data transformation
+│   └── data-mapper.js            # Data transformation with checksum payload creation
 ├── storage/
 │   └── dataswyft-wallet-client.js # Dataswyft Wallet API client
+├── utils/
+│   └── checksum-generator.js     # MD5 checksum generation for data integrity
 └── test/
     ├── test-connect-endpoint.js   # Main endpoint test suite
     ├── run-connect-test.js        # Test runner with server management
     ├── test-connection.js         # OAuth authentication test
-    └── import-contact-to-wallet.js # Individual contact import test
+    ├── test-complete-flow.js      # End-to-end flow with checksum validation
+    ├── test-wallet-write.js       # Wallet write tests with new payload structure
+    └── show-payload-structure.js  # Payload structure demonstration
+```
+
+## Data Integrity & Checksum
+
+### Checksum Implementation
+
+The connector implements MD5 checksum validation for all data stored in the wallet:
+
+- **Checksum Generation**: Computed from the transformed Zoho CRM data before storage
+- **Algorithm**: MD5 hash of sorted keys and normalized values  
+- **Purpose**: Detect data corruption or tampering
+- **Location**: Stored in payload metadata for verification
+
+### Payload Structure
+
+All data written to the wallet uses a structured format:
+
+```javascript
+{
+  "metadata": {
+    "inbox_message_id": "unique-message-identifier",  // Traceability
+    "created_at": "2025-08-18T19:23:01.604Z",        // Timestamp
+    "checksum": "a8e007b487bb707b04e6afc9fa7d0df9"    // Data integrity hash
+  },
+  "data": {
+    // Complete transformed Zoho CRM contact data
+  }
+}
+```
+
+### Testing Checksum
+
+Verify checksum functionality:
+
+```bash
+# Test checksum generation and validation
+node src/test/show-payload-structure.js
+
+# Test complete flow with checksum
+node src/test/test-complete-flow.js
+
+# Test wallet writes with new structure  
+node src/test/test-wallet-write.js
 ```
 
 ## Health Checks
