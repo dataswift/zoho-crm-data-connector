@@ -12,6 +12,7 @@ A production-ready webhook-driven data connector service that receives requests 
 - 📦 **Structured Payload Format** - Metadata wrapper with checksum and traceability
 - 📄 **User-Friendly Error Pages** - Professional error pages for different failure scenarios
 - 📞 **Callback Integration** - Returns status and record IDs via callback URLs
+- 🔗 **Return to Application** - Success and error pages include buttons to return users to calling application
 - 🧪 **Comprehensive Testing** - Full end-to-end test suite with checksum validation
 
 ## Quick Start
@@ -110,13 +111,14 @@ Server runs on `http://localhost:8080` (or `CONNECTOR_PORT`)
 
 **Query Parameters:**
 - `token` (required) - JWT token containing PDA URL and application ID
-- `callback_url` (required) - URL to redirect after completion  
+- `callback_url` (required) - URL to redirect after completion
+- `callback_label` (optional) - Text for return button (defaults to "Return to Application")  
 - `data` (required) - JSON object containing merchant email
 - `request_id` (required) - Request identifier for tracking
 
 **Example Request:**
 ```
-GET /connect?token=eyJhbGc...&callback_url=https://checkd.io/api/callback&data={"email":"merchant@example.com"}&request_id=req_123456
+GET /connect?token=eyJhbGc...&callback_url=https://checkd.io/api/callback&callback_label=Back%20to%20CheckD&data={"email":"merchant@example.com"}&request_id=req_123456
 ```
 
 **Response Flow:**
@@ -124,15 +126,26 @@ GET /connect?token=eyJhbGc...&callback_url=https://checkd.io/api/callback&data={
 2. **Async Processing** - Validates JWT, searches Zoho CRM, stores data
 3. **Callback Response** - Success/failure status with record IDs or error page URL
 
-### Error Pages
+### User Interface Pages
 
-The connector provides user-friendly error pages for different scenarios:
+The connector provides user-friendly pages for different scenarios:
 
+#### Success Page
+- **✅ Data Import Successful** - `/success?request_id=123&callback_url=https://app.com&callback_label=Return`
+- Shows completion status with import details
+- Includes return button to calling application
+
+#### Error Pages  
 - **🔍 Contact Not Found (404)** - `/error?type=EMAIL_NOT_FOUND`
 - **🔐 Authentication Failed (401)** - `/error?type=INVALID_TOKEN`
 - **🔗 Zoho CRM Error (401)** - `/error?type=OAUTH_FAILURE`
 - **⚠️ Service Error (500)** - `/error?type=API_ERROR`
 - **📋 Invalid Request (400)** - `/error?type=INVALID_DATA`
+
+**Error Page Parameters:**
+- `callback_url` (optional) - URL for return button
+- `callback_label` (optional) - Text for return button
+- When provided, only the return button is shown (no "Go Back" or "Try Again")
 
 ## Testing
 
@@ -142,12 +155,28 @@ The connector provides user-friendly error pages for different scenarios:
 npm test
 ```
 
-The test suite validates the complete `/connect` endpoint workflow including success scenarios, error handling, JWT token validation, and error page functionality.
+The test suite validates the complete `/connect` endpoint workflow including success scenarios, error handling, JWT token validation, error page functionality, and callback URL integration.
+
+### Test Callback Functionality
+
+To test the callback URL and return button functionality:
+
+```bash
+# Test success page with callback
+curl "http://localhost:8080/success?request_id=test_123&callback_url=https://your-app.com/dashboard&callback_label=Back%20to%20Dashboard"
+
+# Test error page with callback  
+curl "http://localhost:8080/error?type=EMAIL_NOT_FOUND&message=Contact%20not%20found&request_id=test_456&callback_url=https://your-app.com&callback_label=Return%20to%20App"
+
+# Open pages in browser for visual testing
+open "http://localhost:8080/success?request_id=demo&callback_url=https://checkd.io&callback_label=Back%20to%20CheckD"
+open "http://localhost:8080/error?type=EMAIL_NOT_FOUND&message=Demo%20error&request_id=demo&callback_url=https://checkd.io&callback_label=Back%20to%20CheckD"
+```
 
 ## Data Flow
 
 ### Success Flow
-1. **Gateway Request** → `/connect` endpoint with JWT token
+1. **Gateway Request** → `/connect` endpoint with JWT token and callback parameters
 2. **JWT Validation** → Extract PDA URL and validate expiration  
 3. **Contact Search** → Find merchant in Zoho CRM by email
 4. **Data Transform** → Convert to Dataswyft wallet format
@@ -155,11 +184,13 @@ The test suite validates the complete `/connect` endpoint workflow including suc
 6. **Payload Creation** → Wrap data with metadata (inbox_message_id, timestamp, checksum)
 7. **Storage** → Save to `zoho/contacts` namespace
 8. **Callback** → Send success status with record ID
+9. **Success Page** → User can view success page and return to calling application
 
 ### Error Flow  
 1. **Error Detection** → Invalid token, missing email, API failure
-2. **Error Page Generation** → Create user-friendly error page
+2. **Error Page Generation** → Create user-friendly error page with return button
 3. **Callback** → Send failure status with error page URL for user redirection
+4. **Error Page** → User can view error details and return to calling application
 
 ## Data Structure
 
@@ -168,6 +199,7 @@ The test suite validates the complete `/connect` endpoint workflow including suc
 {
   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", // JWT with PDA URL
   callback_url: "https://checkd.io/api/callback",
+  callback_label: "Back to CheckD Dashboard",           // Return button text
   data: "{\"email\":\"merchant@example.com\"}",       // Merchant email
   request_id: "req_123456"
 }
@@ -318,12 +350,51 @@ CMD ["npm", "start"]
 
 ## Error Handling
 
-### Error Codes
-- `EMAIL_NOT_FOUND` (404) - Contact not found in Zoho CRM
-- `INVALID_TOKEN` (401) - JWT token invalid or expired
-- `OAUTH_FAILURE` (401) - Zoho CRM authentication failed
-- `API_ERROR` (500) - General service error
-- `INVALID_DATA` (400) - Invalid request parameters
+### Error Codes and HTTP Status Mapping
+
+The connector provides comprehensive error handling with specific error codes and appropriate HTTP status codes:
+
+#### 4xx Client Errors
+
+| Error Code | HTTP Status | Description |
+|------------|-------------|-------------|
+| `MISSING_PARAMS` | 400 | Required parameters (token, callback_url, data, request_id) are missing from the request |
+| `MISSING_EMAIL` | 400 | No email address was provided in the authentication data object |
+| `INVALID_DATA` | 400 | The data parameter contains invalid or malformed JSON that cannot be parsed |
+| `EMAIL_NOT_FOUND` | 404 | The provided email address was not found in Zoho CRM contacts |
+| `TOKEN_EXPIRED` | 401 | The authentication token has expired and is no longer valid |
+| `TOKEN_INVALID` | 401 | The authentication token is malformed or invalid |
+| `APP_MISMATCH` | 401 | The application ID in the token does not match the expected connector ID |
+| `INVALID_TOKEN` | 401 | General token validation failure (legacy fallback) |
+| `OAUTH_FAILURE` | 401 | Failed to authenticate with Zoho CRM using OAuth 2.0 |
+
+#### 5xx Server Errors
+
+| Error Code | HTTP Status | Description |
+|------------|-------------|-------------|
+| `API_ERROR` | 500 | General unexpected error occurred during processing |
+| `INTERNAL_ERROR` | 500 | Internal server error requiring support assistance |
+| `WALLET_ERROR` | 502 | Failed to write data to Dataswyft wallet due to connectivity or service issues |
+| `CALLBACK_ERROR` | 502 | Failed to send callback to the provided callback URL |
+| `SERVICE_ERROR` | 503 | The connector service is temporarily unavailable |
+
+### Error Response Format
+
+All errors are returned with a structured response to the callback URL:
+
+```json
+{
+  "status": "failure",
+  "request_id": "req_123456",
+  "error": {
+    "code": "TOKEN_EXPIRED",
+    "message": "Your authentication token has expired",
+    "timestamp": "2025-08-29T12:00:00Z",
+    "error_page_url": "https://connector.example.com/error?type=TOKEN_EXPIRED&..."
+  },
+  "redirect_url": "https://connector.example.com/error?..."
+}
+```
 
 ### Retry Strategy
 - **Non-retryable**: Email not found, invalid tokens

@@ -92,7 +92,7 @@ function isTokenExpired(token) {
  * GET /connect?token=eyJhbGc...&callback_url=https://checkd.io/api/callback&data={"email":"merchant@example.com"}&request_id=req_123456
  */
 app.get('/connect', async (req, res) => {
-  const { token, callback_url, data, request_id } = req.query;
+  const { token, callback_url, callback_label, data, request_id } = req.query;
   
   console.log('🚀 /connect endpoint called');
 
@@ -101,9 +101,11 @@ app.get('/connect', async (req, res) => {
     console.error('❌ Missing required parameters');
     
     const errorUrl = `/error?${new URLSearchParams({
-      type: 'INVALID_DATA',
+      type: 'MISSING_PARAMS',
       message: 'Missing required parameters: token, callback_url, data, request_id',
-      request_id: request_id || 'unknown'
+      request_id: request_id || 'unknown',
+      callback_url: callback_url || '',
+      callback_label: callback_label || 'Return to Application'
     })}`;
     return res.redirect(303, errorUrl);
   }
@@ -116,13 +118,13 @@ app.get('/connect', async (req, res) => {
   });
 
   // Process request asynchronously
-  processConnectRequest(req, token, callback_url, data, request_id);
+  processConnectRequest(req, token, callback_url, callback_label, data, request_id);
 });
 
 /**
  * Asynchronous processing of the connect request
  */
-async function processConnectRequest(req, token, callback_url, data, request_id) {
+async function processConnectRequest(req, token, callback_url, callback_label, data, request_id) {
   try {
     console.log('🔄 Starting async processing...');
     
@@ -131,23 +133,23 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
     try {
       tokenPayload = decodeApplicationToken(token);
     } catch (decodeError) {
-      throw new Error('INVALID_TOKEN: ' + decodeError.message);
+      throw new Error('TOKEN_INVALID: ' + decodeError.message);
     }
     
     // Step 2: Check token expiration
     if (isTokenExpired(token)) {
-      throw new Error('INVALID_TOKEN: Token has expired');
+      throw new Error('TOKEN_EXPIRED: Token has expired');
     }
     
     // Step 3: Validate application ID (required for security)
     const expectedAppId = process.env.DS_APPLICATION_ID;
     if (!expectedAppId) {
-      throw new Error('INVALID_TOKEN: DS_APPLICATION_ID not configured in environment');
+      throw new Error('INTERNAL_ERROR: DS_APPLICATION_ID not configured in environment');
     }
     
     if (tokenPayload.application !== expectedAppId) {
       console.error(`Application ID mismatch: expected ${expectedAppId}, got ${tokenPayload.application}`);
-      throw new Error('INVALID_TOKEN: Application ID mismatch');
+      throw new Error(`APP_MISMATCH: Expected ${expectedAppId}, Received ${tokenPayload.application}`);
     }
     
     // Extract PDA URL from token's iss claim with auto-prepended https://
@@ -159,12 +161,12 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
     try {
       merchantData = typeof data === 'string' ? JSON.parse(data) : data;
     } catch (parseError) {
-      throw new Error('Invalid JSON data format');
+      throw new Error('INVALID_DATA: Invalid JSON data format');
     }
     
     const merchantEmail = merchantData.email;
     if (!merchantEmail) {
-      throw new Error('Email not found in data object');
+      throw new Error('MISSING_EMAIL: Email not found in data object');
     }
     
     // Step 4: Authenticate with Zoho CRM and search for contact
@@ -204,30 +206,60 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
     
     await sendCallback(callback_url, successResponse);
     
+    // Generate success page URL with callback parameters
+    const successPageUrl = `${req.protocol}://${req.get('host')}/success?${new URLSearchParams({
+      request_id: request_id,
+      callback_url: callback_url || '',
+      callback_label: callback_label || 'Return to Application'
+    })}`;
+    
+    console.log(`✅ Success page URL: ${successPageUrl}`);
+    
   } catch (error) {
     console.error('❌ Processing error:', error.message);
     
     // Map error to appropriate error code
     let errorCode = 'API_ERROR';
     let statusCode = 500;
+    let errorDetails = '';
     
-    if (error.message === 'EMAIL_NOT_FOUND') {
-      errorCode = 'EMAIL_NOT_FOUND';
-      statusCode = 404;
-    } else if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('INVALID_TOKEN') || error.message.includes('Application ID mismatch')) {
-      errorCode = 'INVALID_TOKEN';
-      statusCode = 401;
-    } else if (error.message.includes('Email not found')) {
-      errorCode = 'INVALID_DATA';
-      statusCode = 400;
+    // Extract error code from error message if present
+    const errorMatch = error.message.match(/^([A-Z_]+):\s*(.+)$/);
+    if (errorMatch) {
+      errorCode = errorMatch[1];
+      
+      // Special handling for APP_MISMATCH to extract expected/received values
+      if (errorCode === 'APP_MISMATCH') {
+        const mismatchMatch = errorMatch[2].match(/Expected\s+(.+),\s+Received\s+(.+)/);
+        if (mismatchMatch) {
+          errorDetails = `Expected: ${mismatchMatch[1]} | Received: ${mismatchMatch[2]}`;
+        }
+      }
+    } else {
+      // Legacy error detection for backward compatibility
+      if (error.message === 'EMAIL_NOT_FOUND') {
+        errorCode = 'EMAIL_NOT_FOUND';
+        statusCode = 404;
+      } else if (error.message.includes('OAUTH')) {
+        errorCode = 'OAUTH_FAILURE';
+        statusCode = 401;
+      } else if (error.message.includes('Service unavailable')) {
+        errorCode = 'SERVICE_ERROR';
+        statusCode = 503;
+      } else if (error.message.includes('callback')) {
+        errorCode = 'CALLBACK_ERROR';
+        statusCode = 502;
+      }
     }
     
-    // Create error page URL
+    // Create error page URL with callback parameters
     const errorPageUrl = `${req.protocol}://${req.get('host')}/error?${new URLSearchParams({
       type: errorCode,
-      message: error.message,
+      message: error.message.replace(/^[A-Z_]+:\s*/, ''), // Remove error code prefix from message
       request_id: request_id,
-      details: error.stack ? error.stack.split('\n')[0] : ''
+      details: errorDetails || (error.stack ? error.stack.split('\n')[0] : ''),
+      callback_url: callback_url || '',
+      callback_label: callback_label || 'Return to Application'
     })}`;
     
     // Send callback with error page URL
@@ -236,7 +268,7 @@ async function processConnectRequest(req, token, callback_url, data, request_id)
       request_id: request_id,
       error: {
         code: errorCode,
-        message: error.message,
+        message: error.message.replace(/^[A-Z_]+:\s*/, ''), // Clean message
         timestamp: new Date().toISOString(),
         error_page_url: errorPageUrl
       },
@@ -308,21 +340,40 @@ class PDAWalletClient {
       
     } catch (error) {
       console.error('❌ Failed to write to PDA:', error.response?.data || error.message);
-      throw new Error(`Failed to write to PDA namespace ${namespace}/${dataPath}: ${error.message}`);
+      throw new Error(`WALLET_ERROR: Failed to write to PDA namespace ${namespace}/${dataPath}: ${error.message}`);
     }
   }
 }
+
+/**
+ * Success page endpoint
+ * GET /success?request_id=123&callback_url=https://example.com&callback_label=Return
+ */
+app.get('/success', (req, res) => {
+  const { request_id, callback_url, callback_label } = req.query;
+  
+  const htmlContent = generateSuccessPageHTML({
+    request_id: request_id || 'Unknown',
+    callback_url: callback_url || '',
+    callback_label: callback_label || 'Return to Application',
+    timestamp: new Date().toISOString()
+  });
+  
+  res.status(200).send(htmlContent);
+});
 
 /**
  * Error page endpoint
  * GET /error?type=EMAIL_NOT_FOUND&message=Contact not found&request_id=123
  */
 app.get('/error', (req, res) => {
-  const { type, message, request_id, details } = req.query;
+  const { type, message, request_id, details, callback_url, callback_label } = req.query;
   
   
   // Define error page content based on error type
   const errorInfo = getErrorPageInfo(type, message, request_id, details);
+  errorInfo.callback_url = callback_url || '';
+  errorInfo.callback_label = callback_label || 'Return to Application';
   
   const htmlContent = generateErrorPageHTML(errorInfo);
   
@@ -344,19 +395,19 @@ app.get('/health', (req, res) => {
 function getErrorPageInfo(type, message, request_id, details) {
   const errorTypes = {
     EMAIL_NOT_FOUND: {
-      title: 'Contact Not Found',
+      title: 'Email Not Found',
       statusCode: 404,
       icon: '🔍',
-      description: 'The merchant email address could not be found in Zoho CRM.',
-      userAction: 'Please contact support or verify the email address is correct.',
+      description: 'Your email address was not found in the Zoho CRM contacts.',
+      userAction: 'Please ensure you are using the correct email address associated with your account.',
       color: '#f59e0b'
     },
     INVALID_TOKEN: {
-      title: 'Authentication Failed',
+      title: 'Invalid Token',
       statusCode: 401,
       icon: '🔐',
-      description: 'The authentication token is invalid or has expired.',
-      userAction: 'Please try again or contact your system administrator.',
+      description: 'The authentication token provided is invalid or malformed.',
+      userAction: 'Please request a new connection from CheckD.',
       color: '#ef4444'
     },
     OAUTH_FAILURE: {
@@ -376,12 +427,76 @@ function getErrorPageInfo(type, message, request_id, details) {
       color: '#dc2626'
     },
     INVALID_DATA: {
-      title: 'Invalid Request',
+      title: 'Invalid Data Format',
       statusCode: 400,
       icon: '📋',
-      description: 'The request data is invalid or missing required information.',
-      userAction: 'Please check the request parameters and try again.',
+      description: 'The data parameter contains invalid or malformed JSON.',
+      userAction: 'Please ensure the data parameter is properly formatted and URL-encoded.',
       color: '#f59e0b'
+    },
+    APP_MISMATCH: {
+      title: 'Application Mismatch',
+      statusCode: 401,
+      icon: '🚫',
+      description: 'The application ID in your authentication token does not match this connector.',
+      userAction: 'Please ensure you are using the correct application credentials.',
+      color: '#ef4444'
+    },
+    TOKEN_EXPIRED: {
+      title: 'Token Expired',
+      statusCode: 401,
+      icon: '⏰',
+      description: 'Your authentication token has expired.',
+      userAction: 'Please request a new connection from CheckD.',
+      color: '#ef4444'
+    },
+    MISSING_PARAMS: {
+      title: 'Missing Parameters',
+      statusCode: 400,
+      icon: '❗',
+      description: 'Required parameters are missing from the authentication request.',
+      userAction: 'Please ensure the request includes token, callback URL, data, and request ID parameters.',
+      color: '#f59e0b'
+    },
+    MISSING_EMAIL: {
+      title: 'Missing Email Address',
+      statusCode: 400,
+      icon: '📧',
+      description: 'No email address was provided in the authentication data.',
+      userAction: 'Please ensure your email address is included in the request.',
+      color: '#f59e0b'
+    },
+    SERVICE_ERROR: {
+      title: 'Service Unavailable',
+      statusCode: 503,
+      icon: '🔧',
+      description: 'The connector service is temporarily unavailable. Please try again later.',
+      userAction: 'This is likely a temporary issue. Please wait a few moments and try again.',
+      color: '#dc2626'
+    },
+    WALLET_ERROR: {
+      title: 'Wallet Connection Error',
+      statusCode: 502,
+      icon: '💾',
+      description: 'Failed to write data to your Dataswyft wallet. Please try again.',
+      userAction: 'This may be a temporary issue with the wallet service or network connectivity.',
+      color: '#dc2626'
+    },
+    CALLBACK_ERROR: {
+      title: 'Callback Redirect Error',
+      statusCode: 502,
+      icon: '↩️',
+      description: 'Failed to redirect back to the originating application.',
+      userAction: 'The callback URL may be invalid or unreachable. Please contact support.',
+      color: '#dc2626'
+    },
+    INTERNAL_ERROR: {
+      title: 'Internal Server Error',
+      statusCode: 500,
+      icon: '💥',
+      description: 'An unexpected internal error occurred. Please try again or contact support.',
+      userAction: 'If this problem persists, please contact support with the request ID.',
+      color: '#dc2626'
     }
   };
 
@@ -394,6 +509,193 @@ function getErrorPageInfo(type, message, request_id, details) {
     details: details || '',
     timestamp: new Date().toISOString()
   };
+}
+
+/**
+ * Generate HTML success page
+ */
+function generateSuccessPageHTML(successInfo) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success - Zoho CRM Data Connector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .success-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .success-title {
+            color: #10b981;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .success-message {
+            color: #4b5563;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .success-details {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .success-details h3 {
+            color: #374151;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            color: #374151;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        @media (max-width: 640px) {
+            .success-container {
+                padding: 24px;
+            }
+            
+            .success-title {
+                font-size: 1.5rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✅</div>
+        <h1 class="success-title">Data Import Successful</h1>
+        <p class="success-message">Your Zoho CRM contact data has been successfully imported and stored in your wallet.</p>
+        
+        <div class="success-details">
+            <h3>Import Details</h3>
+            <div class="detail-item">
+                <span class="detail-label">Request ID:</span>
+                <span class="detail-value">${successInfo.request_id}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">Completed</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Timestamp:</span>
+                <span class="detail-value">${new Date(successInfo.timestamp).toLocaleString()}</span>
+            </div>
+        </div>
+        
+        <div class="actions">
+            ${successInfo.callback_url ? `
+            <a href="${successInfo.callback_url}" class="btn btn-primary">${successInfo.callback_label}</a>
+            ` : ''}
+        </div>
+        
+        <div class="footer">
+            Zoho CRM Data Connector v1.0.0<br>
+            Your data has been securely stored in your personal data wallet.
+        </div>
+    </div>
+</body>
+</html>`;
 }
 
 /**
@@ -608,8 +910,9 @@ function generateErrorPageHTML(errorInfo) {
         </div>
         
         <div class="actions">
-            <button class="btn btn-primary" onclick="window.history.back()">Go Back</button>
-            <button class="btn btn-secondary" onclick="window.location.reload()">Try Again</button>
+            ${errorInfo.callback_url ? `
+            <a href="${errorInfo.callback_url}" class="btn btn-primary">${errorInfo.callback_label}</a>
+            ` : ''}
         </div>
         
         <div class="footer">
@@ -626,6 +929,7 @@ app.listen(port, () => {
   console.log(`🚀 Zoho CRM Data Connector Server running on port ${port}`);
   console.log(`📋 Endpoints:`);
   console.log(`   GET /connect - Main data connector endpoint`);
+  console.log(`   GET /success - Success page display`);
   console.log(`   GET /error - Error page display`);
   console.log(`   GET /health - Health check`);
 });
