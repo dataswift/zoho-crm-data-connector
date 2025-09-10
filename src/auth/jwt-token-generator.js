@@ -3,17 +3,17 @@ require('dotenv').config();
 
 class JWTTokenGenerator {
   constructor() {
-    this.apiUrl = process.env.DATASWIFT_API_URL;
-    this.username = process.env.DATASWIFT_USERNAME;
-    this.password = process.env.DATASWIFT_PASSWORD;
+    this.apiUrl = process.env.DATASWYFT_API_URL;
+    this.username = process.env.DATASWYFT_USERNAME;
+    this.password = process.env.DATASWYFT_PASSWORD;
     this.applicationId = process.env.DS_APPLICATION_ID;
     
     if (!this.apiUrl) {
-      throw new Error('DATASWIFT_API_URL is required');
+      throw new Error('DATASWYFT_API_URL is required');
     }
     
     if (!this.username || !this.password) {
-      throw new Error('DATASWIFT_USERNAME and DATASWIFT_PASSWORD are required');
+      throw new Error('DATASWYFT_USERNAME and DATASWYFT_PASSWORD are required');
     }
     
     if (!this.applicationId) {
@@ -23,7 +23,7 @@ class JWTTokenGenerator {
 
   async generateJWTToken() {
     try {
-      console.log('🔐 Generating JWT token for Dataswift authentication...');
+      console.log('🔐 Generating JWT token for DATASWYFT authentication...');
       console.log(`📡 API URL: ${this.apiUrl}/users/access_token`);
       console.log(`👤 Username: ${this.username}`);
       

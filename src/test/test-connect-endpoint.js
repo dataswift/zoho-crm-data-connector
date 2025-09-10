@@ -18,14 +18,14 @@ class ConnectEndpointTest {
     
     // Test configuration
     this.testConfig = {
-      pdaUrl: process.env.DATASWIFT_API_URL,
+      pdaUrl: process.env.DATASWYFT_API_URL,
       applicationId: process.env.DS_APPLICATION_ID,
       testEmail: 'sarah.johnson@techcorp.com', // From test data
       secretKey: 'test-secret-key-for-jwt-signing' // For test JWT signing
     };
     
     if (!this.testConfig.pdaUrl) {
-      throw new Error('DATASWIFT_API_URL is required for testing');
+      throw new Error('DATASWYFT_API_URL is required for testing');
     }
     
     if (!this.testConfig.applicationId) {

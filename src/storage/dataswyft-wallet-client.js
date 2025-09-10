@@ -6,20 +6,20 @@ require('dotenv').config();
  * Dataswyft Wallet API Client
  * Handles authentication and data storage to Dataswyft wallet namespaces
  */
-class DataswiftWalletClient {
+class DATASWYFTWalletClient {
   constructor(isTestMode = false) {
-    this.apiUrl = process.env.DATASWIFT_API_URL;
-    this.username = process.env.DATASWIFT_USERNAME;
-    this.password = process.env.DATASWIFT_PASSWORD;
+    this.apiUrl = process.env.DATASWYFT_API_URL;
+    this.username = process.env.DATASWYFT_USERNAME;
+    this.password = process.env.DATASWYFT_PASSWORD;
     this.isTestMode = isTestMode;
     
     if (!this.apiUrl) {
-      throw new Error('DATASWIFT_API_URL is required in environment variables');
+      throw new Error('DATASWYFT_API_URL is required in environment variables');
     }
     
     // Only require username/password for test mode
     if (this.isTestMode && (!this.username || !this.password)) {
-      throw new Error('DATASWIFT_USERNAME and DATASWIFT_PASSWORD are required for test mode');
+      throw new Error('DATASWYFT_USERNAME and DATASWYFT_PASSWORD are required for test mode');
     }
     
     this.accessToken = null;
@@ -168,9 +168,9 @@ class DataswiftWalletClient {
       return await this.getValidApplicationToken();
     } else {
       // In production, the application token is provided externally
-      const productionToken = process.env.DATASWIFT_PRODUCTION_TOKEN;
+      const productionToken = process.env.DATASWYFT_PRODUCTION_TOKEN;
       if (!productionToken) {
-        throw new Error('DATASWIFT_PRODUCTION_TOKEN is required in production mode');
+        throw new Error('DATASWYFT_PRODUCTION_TOKEN is required in production mode');
       }
       return productionToken;
     }
@@ -277,4 +277,4 @@ class DataswiftWalletClient {
   }
 }
 
-module.exports = DataswiftWalletClient;
+module.exports = DATASWYFTWalletClient;

@@ -2,13 +2,13 @@ const axios = require('axios');
 const JWTTokenGenerator = require('../auth/jwt-token-generator');
 require('dotenv').config();
 
-class DataswiftWalletClient {
+class DATASWYFTWalletClient {
   constructor() {
-    this.apiUrl = process.env.DATASWIFT_API_URL;
+    this.apiUrl = process.env.DATASWYFT_API_URL;
     this.jwtGenerator = new JWTTokenGenerator();
     
     if (!this.apiUrl) {
-      throw new Error('DATASWIFT_API_URL is required');
+      throw new Error('DATASWYFT_API_URL is required');
     }
   }
 
@@ -45,12 +45,12 @@ class DataswiftWalletClient {
       
     } catch (error) {
       if (error.response) {
-        console.error('🚨 Dataswift Write Error:', error.response.status, error.response.data);
+        console.error('🚨 DATASWYFT Write Error:', error.response.status, error.response.data);
         throw new Error(`Failed to write to namespace ${namespace}/${path}: ${error.response.status} - ${error.response.statusText}`);
       } else if (error.request) {
-        throw new Error(`Network error writing to namespace ${namespace}/${path}: Unable to reach Dataswift API`);
+        throw new Error(`Network error writing to namespace ${namespace}/${path}: Unable to reach DATASWYFT API`);
       } else {
-        throw new Error(`Dataswift write error: ${error.message}`);
+        throw new Error(`DATASWYFT write error: ${error.message}`);
       }
     }
   }
@@ -106,15 +106,15 @@ class DataswiftWalletClient {
       
     } catch (error) {
       if (error.response) {
-        console.error('🚨 Dataswift Read Error:', error.response.status, error.response.data);
+        console.error('🚨 DATASWYFT Read Error:', error.response.status, error.response.data);
         throw new Error(`Failed to read from namespace ${namespace}/${path}: ${error.response.status} - ${error.response.statusText}`);
       } else if (error.request) {
-        throw new Error(`Network error reading from namespace ${namespace}/${path}: Unable to reach Dataswift API`);
+        throw new Error(`Network error reading from namespace ${namespace}/${path}: Unable to reach DATASWYFT API`);
       } else {
-        throw new Error(`Dataswift read error: ${error.message}`);
+        throw new Error(`DATASWYFT read error: ${error.message}`);
       }
     }
   }
 }
 
-module.exports = DataswiftWalletClient;
+module.exports = DATASWYFTWalletClient;

@@ -6,7 +6,7 @@ class DataMapper {
     this.schemaVersion = '1.0';
   }
 
-  transformZohoContactToDataswiftSchema(zohoContact) {
+  transformZohoContactToDATASWYFTSchema(zohoContact) {
     const timestamp = new Date().toISOString();
     
     return {
@@ -164,8 +164,8 @@ class DataMapper {
     return customProperties;
   }
 
-  formatForDataswiftStorage(transformedData) {
-    // Format the data for Dataswift storage
+  formatForDATASWYFTStorage(transformedData) {
+    // Format the data for DATASWYFT storage
     return {
       contact_id: transformedData.data.id,
       zoho_data: transformedData.data,

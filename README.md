@@ -49,9 +49,9 @@ CONNECTOR_PORT=8080
 CALLBACK_URL=https://example.com/callback
 
 # Test-Only Configuration (Only needed for running test scripts)
-DATASWIFT_API_URL=https://your-wallet-instance.hubat.net
-DATASWIFT_USERNAME=your_username
-DATASWIFT_PASSWORD=your_password
+DATASWYFT_API_URL=https://your-wallet-instance.hubat.net
+DATASWYFT_USERNAME=your_username
+DATASWYFT_PASSWORD=your_password
 NODE_ENV=development
 ```
 

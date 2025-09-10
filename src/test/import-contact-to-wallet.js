@@ -1,5 +1,5 @@
 const ZohoCRMConnector = require('../connectors/zoho-crm-connector');
-const DataswiftWalletClient = require('../storage/dataswyft-wallet-client');
+const DATASWYFTWalletClient = require('../storage/dataswyft-wallet-client');
 
 // Error codes and retry strategies matching the screenshot specification
 const ERROR_CODES = {
@@ -155,7 +155,7 @@ async function importContactToWallet(email) {
   console.log(`🔄 Importing contact ${email} from Zoho CRM to Dataswyft wallet...\n`);
   
   const crmConnector = new ZohoCRMConnector();
-  const walletClient = new DataswiftWalletClient();
+  const walletClient = new DATASWYFTWalletClient();
   
   try {
     // Step 1: Get contact from Zoho CRM with retry logic
@@ -279,7 +279,7 @@ async function testImportProcess() {
     
     // Test 2: Test connection to wallet
     console.log('\n🔄 Testing Dataswyft wallet connection...');
-    const walletClient = new DataswiftWalletClient();
+    const walletClient = new DATASWYFTWalletClient();
     const connectionTest = await walletClient.testConnection();
     
     if (connectionTest) {

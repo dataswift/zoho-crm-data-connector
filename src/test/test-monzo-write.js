@@ -1,10 +1,10 @@
-const DataswiftWalletClient = require('../storage/dataswyft-wallet-client');
+const DATASWYFTWalletClient = require('../storage/dataswyft-wallet-client');
 
 async function testMonzoWrite() {
   console.log('🔄 Testing Monzo endpoint write with complete auth flow...\n');
   
   // Initialize client in test mode to enable authentication flow
-  const walletClient = new DataswiftWalletClient(true);
+  const walletClient = new DATASWYFTWalletClient(true);
   
   try {
     console.log('='.repeat(60));

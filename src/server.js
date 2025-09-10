@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const ZohoCRMConnector = require('./connectors/zoho-crm-connector');
-const DataswiftWalletClient = require('./storage/dataswyft-wallet-client');
+const DATASWYFTWalletClient = require('./storage/dataswyft-wallet-client');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -177,16 +177,16 @@ async function processConnectRequest(req, token, callback_url, callback_label, d
     }
     
     // Step 5: Store data in wallet using existing Dataswyft client
-    const dataswiftClient = new DataswiftWalletClient();
+    const dataswyftClient = new DATASWYFTWalletClient();
     
     // Store in appropriate namespace (test for testing, zoho-crm for production)
     const isTestMode = process.env.NODE_ENV === 'test' || request_id.includes('test_');
     
     let zohoRecord;
     if (isTestMode) {
-      zohoRecord = await dataswiftClient.writeToNamespace('zoho', 'test', contactData);
+      zohoRecord = await dataswyftClient.writeToNamespace('zoho', 'test', contactData);
     } else {
-      zohoRecord = await dataswiftClient.writeZohoCRMContact(contactData);
+      zohoRecord = await dataswyftClient.writeZohoCRMContact(contactData);
     }
     
     // Step 6: Report success to callback URL

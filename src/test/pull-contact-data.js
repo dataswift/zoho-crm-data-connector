@@ -109,7 +109,7 @@ async function pullContactData(email) {
     // Step 6: Transform data for Dataswyft wallet format
     console.log('\n🔄 Step 6: Transforming data for Dataswyft wallet...');
     
-    const transformedData = contacts.map(contact => transformToDataswiftFormat(contact));
+    const transformedData = contacts.map(contact => transformToDATASWYFTFormat(contact));
     
     console.log('\n📦 Transformed Data for Dataswyft Wallet:');
     console.log('═'.repeat(50));
@@ -141,7 +141,7 @@ if (require.main === module) {
  * @param {Object} contact - Raw Zoho CRM contact object
  * @returns {Object} Transformed data for Dataswyft wallet
  */
-function transformToDataswiftFormat(contact) {
+function transformToDATASWYFTFormat(contact) {
   // Extract any additional properties not in the main content structure
   const mainFields = [
     'Email', 'First_Name', 'Last_Name', 'company', 'Phone', 'Title',
@@ -200,4 +200,4 @@ function transformToDataswiftFormat(contact) {
   };
 }
 
-module.exports = { pullContactData, transformToDataswiftFormat };
+module.exports = { pullContactData, transformToDATASWYFTFormat };

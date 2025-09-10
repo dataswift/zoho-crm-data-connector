@@ -1,16 +1,16 @@
 const ContactSearch = require('../connectors/contact-search');
 const DataMapper = require('../connectors/data-mapper');
-const DataswiftWalletClient = require('../storage/dataswyft-wallet-client');
+const DATASWYFTWalletClient = require('../storage/dataswyft-wallet-client');
 const JWTTokenGenerator = require('../auth/jwt-token-generator');
 const ChecksumGenerator = require('../utils/checksum-generator');
 
 async function testCompleteFlow() {
-  console.log('🔄 Testing Complete Flow: Zoho CRM → Dataswift Wallet...\n');
+  console.log('🔄 Testing Complete Flow: Zoho CRM → DATASWYFT Wallet...\n');
   
   // Initialize components
   const contactSearch = new ContactSearch();
   const dataMapper = new DataMapper();
-  const walletClient = new DataswiftWalletClient(true); // Use test mode to write to zoho/test
+  const walletClient = new DATASWYFTWalletClient(true); // Use test mode to write to zoho/test
   const jwtGenerator = new JWTTokenGenerator();
   
   // Test email
@@ -40,7 +40,7 @@ async function testCompleteFlow() {
     console.log('🔄 STEP 3: Transforming contact data');
     console.log('='.repeat(60));
     
-    const transformedData = dataMapper.transformZohoContactToDataswiftSchema(contact);
+    const transformedData = dataMapper.transformZohoContactToDATASWYFTSchema(contact);
     
     console.log('✅ Data transformed successfully!');
     console.log('📊 Transformed data structure:');
@@ -75,12 +75,12 @@ async function testCompleteFlow() {
     console.log(JSON.stringify(walletPayload, null, 2));
     
     console.log('\n' + '='.repeat(60));
-    console.log('🔄 STEP 5: Writing to Dataswift wallet');
+    console.log('🔄 STEP 5: Writing to DATASWYFT wallet');
     console.log('='.repeat(60));
     
     const writeResult = await walletClient.writeZohoCRMContact(transformedData, inboxMessageId);
     
-    console.log('✅ Successfully wrote contact data to Dataswift wallet!');
+    console.log('✅ Successfully wrote contact data to DATASWYFT wallet!');
     console.log('📊 Write result:');
     console.log(`   - Status: ${writeResult.status}`);
     console.log(`   - Record ID: ${writeResult.recordId}`);
@@ -104,7 +104,7 @@ async function testCompleteFlow() {
     console.log('\n📋 Summary:');
     console.log(`✅ 1. Found contact: ${contact.Full_Name || contact.First_Name + ' ' + contact.Last_Name}`);
     console.log(`✅ 2. Generated Application token`);
-    console.log(`✅ 3. Transformed data to Dataswift schema`);
+    console.log(`✅ 3. Transformed data to DATASWYFT schema`);
     console.log(`✅ 4. Created checksum payload with metadata`);
     console.log(`✅ 5. Wrote to wallet namespace: zoho/contacts`);
     console.log(`✅ 6. Process completed successfully with Record ID: ${writeResult.recordId}`);
@@ -113,7 +113,7 @@ async function testCompleteFlow() {
     console.log('   - This flow can now be integrated into webhook endpoints');
     console.log('   - Application token will be provided by Gateway in production');
     console.log('   - Contact email will come from CheckD callback');
-    console.log('   - Data is now available in Dataswift wallet for badge authentication');
+    console.log('   - Data is now available in DATASWYFT wallet for badge authentication');
     
   } catch (error) {
     console.error('\n❌ Complete flow test failed:');
@@ -121,8 +121,8 @@ async function testCompleteFlow() {
     
     if (error.message.includes('JWT')) {
       console.error('\n💡 JWT Token issues:');
-      console.error('   - Check your DATASWIFT_USERNAME and DATASWIFT_PASSWORD in .env');
-      console.error('   - Verify the Dataswift API URL is correct');
+      console.error('   - Check your DATASWYFT_USERNAME and DATASWYFT_PASSWORD in .env');
+      console.error('   - Verify the DATASWYFT API URL is correct');
     }
     
     if (error.message.includes('contact')) {
@@ -135,7 +135,7 @@ async function testCompleteFlow() {
       console.error('\n💡 Wallet write issues:');
       console.error('   - Check JWT token permissions');
       console.error('   - Verify namespace and path are correct');
-      console.error('   - Check Dataswift API endpoint');
+      console.error('   - Check DATASWYFT API endpoint');
     }
     
     process.exit(1);

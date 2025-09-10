@@ -75,7 +75,7 @@ class ZohoCRMConnector {
    * @param {Object} contact - Raw Zoho CRM contact object
    * @returns {Object} Transformed data for Dataswyft wallet
    */
-  transformToDataswiftFormat(contact) {
+  transformToDATASWYFTFormat(contact) {
     // Extract any additional properties not in the main content structure
     const properties = {};
     Object.keys(contact).forEach(key => {
@@ -141,7 +141,7 @@ class ZohoCRMConnector {
       }
       
       // Return the first matching contact transformed to Dataswyft format
-      return this.transformToDataswiftFormat(contacts[0]);
+      return this.transformToDATASWYFTFormat(contacts[0]);
       
     } catch (error) {
       // Re-throw with more context
@@ -158,7 +158,7 @@ class ZohoCRMConnector {
     try {
       const contacts = await this.searchContactByEmail(email);
       
-      return contacts.map(contact => this.transformToDataswiftFormat(contact));
+      return contacts.map(contact => this.transformToDATASWYFTFormat(contact));
       
     } catch (error) {
       // Re-throw with more context

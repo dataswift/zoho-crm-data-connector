@@ -26,12 +26,12 @@ async function showPayloadStructure() {
     KYB_Verified_At: "2024-01-15T10:30:00-08:00"
   };
   
-  // Step 1: Transform to Dataswift schema
+  // Step 1: Transform to DATASWYFT schema
   console.log('📋 Step 1: Raw Zoho CRM data from API');
   console.log(JSON.stringify(zohoContact, null, 2));
   
   // Step 2: Transform the data
-  const transformedData = dataMapper.transformZohoContactToDataswiftSchema(zohoContact);
+  const transformedData = dataMapper.transformZohoContactToDATASWYFTSchema(zohoContact);
   console.log('\n📋 Step 2: Transformed data (what goes into checksum calculation)');
   console.log(JSON.stringify(transformedData, null, 2));
   
