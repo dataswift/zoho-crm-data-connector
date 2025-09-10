@@ -5,7 +5,7 @@ class ZohoOAuthClient {
   constructor() {
     this.clientId = process.env.ZOHO_CRM_CLIENT_ID;
     this.clientSecret = process.env.ZOHO_CRM_CLIENT_SECRET;
-    this.accountsUrl = process.env.ZOHO_CRM_ACCOUNTS_URL || 'https://accounts.zoho.com';
+    this.accountsUrl = process.env.ZOHO_CRM_ACCOUNTS_URL || 'https://accounts.zoho.eu';
     this.tokenUrl = `${this.accountsUrl}/oauth/v2/token`;
     
     if (!this.clientId || !this.clientSecret) {
@@ -45,7 +45,7 @@ class ZohoOAuthClient {
           refreshToken: response.data.refresh_token,
           tokenType: response.data.token_type || 'Bearer',
           expiresIn: response.data.expires_in || 3600,
-          apiDomain: response.data.api_domain || process.env.ZOHO_CRM_API_DOMAIN || 'https://www.zohoapis.com',
+          apiDomain: response.data.api_domain || process.env.ZOHO_CRM_API_DOMAIN || 'https://www.zohoapis.eu',
           expiresAt: Date.now() + (response.data.expires_in * 1000)
         };
       } else {
@@ -94,7 +94,7 @@ class ZohoOAuthClient {
           accessToken: response.data.access_token,
           tokenType: response.data.token_type || 'Bearer',
           expiresIn: response.data.expires_in || 3600,
-          apiDomain: response.data.api_domain || process.env.ZOHO_CRM_API_DOMAIN || 'https://www.zohoapis.com',
+          apiDomain: response.data.api_domain || process.env.ZOHO_CRM_API_DOMAIN || 'https://www.zohoapis.eu',
           expiresAt: Date.now() + (response.data.expires_in * 1000)
         };
       } else {

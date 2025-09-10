@@ -1,0 +1,192 @@
+/* Zoho CRM Data Connector - Common Page Styles */
+
+/* CSS Variables for theming */
+:root {
+    --primary-green: #10b981;
+    --text-primary: #374151;
+    --text-secondary: #4b5563;
+    --text-muted: #6b7280;
+    --text-light: #9ca3af;
+    --background-light: #f9fafb;
+    --border-light: #e5e7eb;
+    --border-gray: #d1d5db;
+    --background-gray: #f3f4f6;
+    --background-gray-hover: #e5e7eb;
+    --font-mono: 'Monaco', 'Menlo', monospace;
+    --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Base reset and typography */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-system);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Common container styles */
+.page-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+    padding: 40px;
+    text-align: center;
+}
+
+/* Icon styles */
+.page-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    display: block;
+}
+
+/* Title styles (base - colors set per page) */
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+/* Message styles */
+.page-message {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+/* Details section */
+.page-details {
+    background: var(--background-light);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.page-details h3 {
+    color: var(--text-primary);
+    font-size: 1rem;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+/* Detail items */
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+/* User action section (error pages only) */
+.user-action {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 16px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.user-action-title {
+    color: #1e40af;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.user-action-text {
+    color: #1e3a8a;
+}
+
+/* Actions section */
+.actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Button styles */
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.btn-primary {
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--background-gray);
+    color: var(--text-primary);
+    border: 1px solid var(--border-gray);
+}
+
+.btn-secondary:hover {
+    background: var(--background-gray-hover);
+}
+
+/* Footer */
+.footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-light);
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+    .page-container {
+        padding: 24px;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+    }
+    
+    .actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}

@@ -6,7 +6,7 @@ require('dotenv').config();
  * Dataswyft Wallet API Client
  * Handles authentication and data storage to Dataswyft wallet namespaces
  */
-class DATASWYFTWalletClient {
+class DataswyftWalletClient {
   constructor(isTestMode = false) {
     this.apiUrl = process.env.DATASWYFT_API_URL;
     this.username = process.env.DATASWYFT_USERNAME;
@@ -277,4 +277,4 @@ class DATASWYFTWalletClient {
   }
 }
 
-module.exports = DATASWYFTWalletClient;
+module.exports = DataswyftWalletClient;

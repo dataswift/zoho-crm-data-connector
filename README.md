@@ -59,7 +59,7 @@ NODE_ENV=development
 
 #### Create Self-Client Application
 
-1. Go to [Zoho API Console](https://api-console.zoho.com/)
+1. Go to [Zoho API Console](https://api-console.zoho.eu/)
 2. Create a new application → Select **"Self Client"**
 3. Configure scopes: `ZohoCRM.modules.contacts.ALL`
 4. Note your `Client ID` and `Client Secret`
