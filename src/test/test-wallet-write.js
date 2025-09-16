@@ -1,4 +1,4 @@
-const DATASWYFTWalletClient = require('../storage/dataswyft-wallet-client');
+const DataswyftWalletClient = require('../storage/dataswyft-wallet-client');
 const DataMapper = require('../connectors/data-mapper');
 const ChecksumGenerator = require('../utils/checksum-generator');
 
@@ -6,7 +6,7 @@ async function testWalletWrite() {
   console.log('🔄 Testing Dataswyft wallet write operations...\n');
   
   // Initialize client in test mode to enable authentication flow
-  const walletClient = new DATASWYFTWalletClient(true);
+  const walletClient = new DataswyftWalletClient(true);
   
   try {
     // Test 1: Test checksum generation

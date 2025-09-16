@@ -4,7 +4,7 @@ function generateAuthUrl() {
   const clientId = process.env.ZOHO_CRM_CLIENT_ID;
   const scope = process.env.ZOHO_CRM_SCOPE || 'ZohoCRM.modules.contacts.ALL';
   const redirectUri = process.env.ZOHO_CRM_REDIRECT_URI || 'http://localhost:3000/oauth/callback';
-  const accountsUrl = process.env.ZOHO_CRM_ACCOUNTS_URL || 'https://accounts.zoho.com';
+  const accountsUrl = process.env.ZOHO_CRM_ACCOUNTS_URL || 'https://accounts.zoho.eu';
   
   if (!clientId) {
     console.error('❌ Error: ZOHO_CRM_CLIENT_ID is required in .env file');

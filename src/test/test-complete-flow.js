@@ -1,6 +1,6 @@
 const ContactSearch = require('../connectors/contact-search');
 const DataMapper = require('../connectors/data-mapper');
-const DATASWYFTWalletClient = require('../storage/dataswyft-wallet-client');
+const DataswyftWalletClient = require('../storage/dataswyft-wallet-client');
 const JWTTokenGenerator = require('../auth/jwt-token-generator');
 const ChecksumGenerator = require('../utils/checksum-generator');
 
